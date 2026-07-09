@@ -1,5 +1,20 @@
 import random, math, operator
 
+def protected_div(a, b):
+        if abs(b) < 1e-12:
+            return float("nan")
+        return a/b
+
+def protected_log(a):
+    if a <= 0:
+        return float("nan")
+    return math.log(a)
+
+def protected_pow(a, b):
+    if a < 0 and not b.is_integer():
+        return float("nan")
+    return math.pow(a, b)
+
 
 class ExpressionTree:
     UNARY_OPERATORS = {
@@ -7,15 +22,15 @@ class ExpressionTree:
         "cos" : math.cos,
         "tan" : math.tan,
         "exp" : math.exp,
-        "log" : math.log,
+        "log" : protected_log,
     }
     
     BINARY_OPERATORS = {
         "+": operator.add,
         "-": operator.sub,
         "*": operator.mul,
-        "/": operator.truediv,
-        "^": operator.pow,
+        "/": protected_div,
+        "^": protected_pow,
     }
 
     def __init__(self, depth):
@@ -56,10 +71,13 @@ class ExpressionTree:
 
 class ValueNode():
     def __init__(self):
-        if random.randint(0,3) == 0:
+        if random.randint(0,2) == 0:
             self.value = "x"
         else:
-            self.value = random.randint(0,10)
+            if random.random() < 0.7:
+                self.value = random.randint(-5, 5)
+            else:
+                self.value = round(random.uniform(-10, 10), 2)
 
     def __str__(self):
         return str(self.value)
@@ -99,7 +117,6 @@ class UnaryNode():
             
             
 
-
 class BinaryNode():
     def __init__(self, depth):
         self.operator = random.choice(list(ExpressionTree.BINARY_OPERATORS.keys()))
@@ -108,6 +125,7 @@ class BinaryNode():
     
     def __str__(self):
         return "(" + str(self.left) + " " + self.operator + " " + str(self.right) + ")"
+    
 
     def generate_child(self, depth):
         if depth <= 0:
@@ -128,6 +146,6 @@ class BinaryNode():
         return float(ExpressionTree.BINARY_OPERATORS[self.operator](leftValue, rightValue))
 
         
-tree1 = ExpressionTree(2)
+tree1 = ExpressionTree(3)
 print(str(tree1))
 print(tree1.evaluate(1))
