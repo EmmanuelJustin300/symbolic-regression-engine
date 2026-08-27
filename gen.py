@@ -3,11 +3,8 @@ import random
 import os
 import math
 
-"""Need a way to check if eqn if valid to write into file,
-remove all constant graphs too,
-then loop create datasets for comparison"""
 
-def gen_data(equation):
+def gen_random_data(equation):
   
     data = []
     for i in range(random.randint(20,70)):
@@ -16,8 +13,11 @@ def gen_data(equation):
         data.append((x, y))
         data.sort(key=lambda point: point[0])
 
+    """
     for each in data:
         print(f"({each[0]}, {each[1]})\n")
+
+    """
 
     return data
 
@@ -34,10 +34,12 @@ def gen_file_name():
 
 def check_valid(equation, data):
 
-    if any(math.isnan(y) for x,y in data):
-        print("nan present")
+    #Check for all nan values
+    if all(math.isnan(y) for x,y in data):
         return False
-    
+
+    """
+    #Check the equation isnt just x (temporary)
     if str(equation) == "x":
         return False
     
@@ -47,16 +49,16 @@ def check_valid(equation, data):
         if y1 != y2:
             const_y = False
     if const_y == True:
-        print("Y VALUE NOT CHANGING")
         return False
     
-    
+    #Check the equation isnt a constant, e.g. y=4
     try:
         float(str(equation))
-        print("constant equation")
         return False
     except ValueError:
         pass
+        
+    """
 
     return True
     
@@ -65,7 +67,7 @@ def check_valid(equation, data):
 
 def gen_file():
     equation = eqn.ExpressionTree(3)
-    data = gen_data(equation)
+    data = gen_random_data(equation)
     filename = gen_file_name()
     
 
@@ -81,10 +83,5 @@ def gen_file():
         f.close
     else:
         return
-    
 
-for each in range(10):
-    try:
-        gen_file()
-    except:
-        continue
+

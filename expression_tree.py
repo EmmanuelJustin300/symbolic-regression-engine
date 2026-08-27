@@ -1,4 +1,5 @@
 import random, math, operator
+from abc import ABC, abstractmethod  
 
 def protected_div(a, b):
         if abs(b) < 1e-12:
@@ -13,28 +14,44 @@ def protected_log(a):
 def protected_pow(a, b):
     if a < 0 and not b.is_integer():
         return float("nan")
-    return math.pow(a, b)
 
-def generate_random_node(depth):
-    if depth <= 0:
-        return ValueNode()
+    try:
+        return math.pow(a, b)
+    except (OverflowError, ValueError):
+        return float("nan")
 
-    choice = random.randint(0, 2)
+def protected_exp(a):
+    try:
+        return math.exp(a)
+    except OverflowError:
+        return float("nan")
 
-    if choice == 0:
-        return ValueNode()
-    elif choice == 1:
-        return UnaryNode(depth - 1)
-    else:
-        return BinaryNode(depth - 1)
+def protected_sin(a):
+    try:
+        return math.sin(a)
+    except (ValueError):
+        return float("nan")
+
+def protected_cos(a):
+    try:
+        return math.cos(a)
+    except (ValueError):
+        return float("nan")
+
+def protected_tan(a):
+    try:
+        return math.tan(a)
+    except (ValueError):
+        return float("nan")
+
 
 
 class ExpressionTree:
     UNARY_OPERATORS = {
-        "sin" : math.sin,
-        "cos" : math.cos,
-        "tan" : math.tan,
-        "exp" : math.exp,
+        "sin" : protected_sin,
+        "cos" : protected_cos,
+        "tan" : protected_tan,
+        "exp" : protected_exp,
         "log" : protected_log,
     }
     
@@ -81,8 +98,33 @@ class ExpressionTree:
 
 
 
+class Node(ABC):
 
-class ValueNode():
+    @abstractmethod
+    def __str__(self):
+        pass
+    
+    @abstractmethod
+    def evaluate(self, x):
+        pass
+
+    @staticmethod
+    def generate_child(depth):
+        if depth <= 0:
+            return ValueNode()
+
+        choice = random.randint(0, 2)
+
+        if choice == 0:
+            return ValueNode()
+        elif choice == 1:
+            return UnaryNode(depth - 1)
+        else:
+            return BinaryNode(depth - 1)
+
+
+
+class ValueNode(Node):
     def __init__(self):
         if random.randint(0,1) == 0:
             self.value = "x"
@@ -90,7 +132,7 @@ class ValueNode():
             if random.random() < 0.7:
                 self.value = random.randint(-5, 5)
             else:
-                self.value = round(random.uniform(-10, 10), 2)
+                self.value = round(random.uniform(-100, 100), 2)
 
     def __str__(self):
         return str(self.value)
@@ -104,10 +146,10 @@ class ValueNode():
         
 
 
-class UnaryNode():
+class UnaryNode(Node):
     def __init__(self, depth):
         self.operator = random.choice(list(ExpressionTree.UNARY_OPERATORS.keys()))
-        self.child = generate_random_node(depth)
+        self.child: Node = Node.generate_child(depth)
 
     def __str__(self):
         return self.operator + "(" + str(self.child) + ")"
@@ -115,15 +157,22 @@ class UnaryNode():
             
     def evaluate(self, x):
         value = self.child.evaluate(x)
-        return float(ExpressionTree.UNARY_OPERATORS[self.operator](value))
+
+        try:
+            return float(ExpressionTree.UNARY_OPERATORS[self.operator](value))
+        except Exception as e:
+            print(f"Failed evaluating: {self.operator}({value})")
+            print(f"x = {x}")
+            print(f"Error: {e}")
+            raise
             
             
 
-class BinaryNode():
+class BinaryNode(Node):
     def __init__(self, depth):
         self.operator = random.choice(list(ExpressionTree.BINARY_OPERATORS.keys()))
-        self.left = generate_random_node(depth)
-        self.right = generate_random_node(depth)
+        self.left: Node = Node.generate_child(depth)
+        self.right: Node = Node.generate_child(depth)
     
     def __str__(self):
         return "(" + str(self.left) + " " + self.operator + " " + str(self.right) + ")"
