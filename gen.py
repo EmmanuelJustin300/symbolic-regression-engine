@@ -38,35 +38,13 @@ def check_valid(equation, data):
     if all(math.isnan(y) for x,y in data):
         return False
 
-    """
-    #Check the equation isnt just x (temporary)
-    if str(equation) == "x":
-        return False
-    
-    #Check for y value not changing
-    const_y = True
-    for (x1,y1),(x2,y2) in zip(data, data[1:]):
-        if y1 != y2:
-            const_y = False
-    if const_y == True:
-        return False
-    
-    #Check the equation isnt a constant, e.g. y=4
-    try:
-        float(str(equation))
-        return False
-    except ValueError:
-        pass
-        
-    """
-
     return True
     
 
 
 
 def gen_file():
-    equation = eqn.ExpressionTree(3)
+    equation = eqn.Expression.random(3)
     data = gen_random_data(equation)
     filename = gen_file_name()
     
@@ -80,7 +58,6 @@ def gen_file():
             f.write(f"f(x)={str(equation)}\n")
             for each in data:
                 f.write(f"{each[0]:.3f}, {each[1]:.3f}\n")
-        f.close
     else:
         return
 

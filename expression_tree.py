@@ -46,7 +46,7 @@ def protected_tan(a):
 
 
 
-class ExpressionTree:
+class Expression:
     UNARY_OPERATORS = {
         "sin" : protected_sin,
         "cos" : protected_cos,
@@ -63,26 +63,18 @@ class ExpressionTree:
         "^": protected_pow,
     }
 
-    def __init__(self, depth):
+    def __init__(self, root):
+        if isinstance(root, Expression):
+            self.root = root.root
+        elif isinstance(root, Node):
+            self.root : Node = root
 
-        try:
-            x = int(depth)
-        except Exception as e:
-            print(type(e).__name__)
-            print(e)
-            return
+    @classmethod
+    def random(cls, depth):
+        root = Node.generate_child(depth)
+        return cls(root)
 
-        self.depth = depth
 
-        match random.randint(0,2):
-            case 0:
-                self.root = ValueNode()
-            case 1:
-                self.root = UnaryNode(depth)
-            case 2:
-                self.root = BinaryNode(depth)
-
-    
     def __str__(self):
         return str(self.root)
     
@@ -96,6 +88,14 @@ class ExpressionTree:
         
         return self.root.evaluate(x)
 
+    def offspring(self, node):
+        nodes = [node]
+
+        for child in node.get_children():
+            nodes.extend(self.offspring(child))
+
+        return nodes
+
 
 
 class Node(ABC):
@@ -108,19 +108,43 @@ class Node(ABC):
     def evaluate(self, x):
         pass
 
+    @abstractmethod
+    def get_children(self):
+        pass
+
+    def get_value(self):
+        pass
+
     @staticmethod
     def generate_child(depth):
-        if depth <= 0:
-            return ValueNode()
 
+        try:
+            depth = int(depth)
+        except Exception as e:
+            print(type(e).__name__)
+            print(e)
+            return
+
+
+        if depth <= 0:
+            new_node = ValueNode()
+            self.parent = new_node
+            return new_node
         choice = random.randint(0, 2)
 
         if choice == 0:
-            return ValueNode()
+            new_node = ValueNode()
+            self.parent = new_node
+            return new_node
         elif choice == 1:
-            return UnaryNode(depth - 1)
+            new_node = UnaryNode(depth - 1)
+            self.parent = new_node
+            return new_node
         else:
-            return BinaryNode(depth - 1)
+            new_node = BinaryNode(depth - 1)
+            self.parent = new_node
+            return new_node
+
 
 
 
@@ -128,6 +152,7 @@ class ValueNode(Node):
     def __init__(self):
         if random.randint(0,1) == 0:
             self.value = "x"
+            self.parent = None
         else:
             if random.random() < 0.7:
                 self.value = random.randint(-5, 5)
@@ -136,6 +161,9 @@ class ValueNode(Node):
 
     def __str__(self):
         return str(self.value)
+
+    def get_value(self):
+        return str(self)
     
     
     def evaluate(self, x):
@@ -143,43 +171,71 @@ class ValueNode(Node):
             return float(x)
         else:
             return float(self.value)
+
+
+    def get_children(self):
+        return []
         
 
 
 class UnaryNode(Node):
     def __init__(self, depth):
-        self.operator = random.choice(list(ExpressionTree.UNARY_OPERATORS.keys()))
+        self.operator = random.choice(list(Expression.UNARY_OPERATORS.keys()))
         self.child: Node = Node.generate_child(depth)
+        self.parent: Node = None
+
 
     def __str__(self):
         return self.operator + "(" + str(self.child) + ")"
+
+    def get_value(self):
+        return self.operator
     
             
     def evaluate(self, x):
         value = self.child.evaluate(x)
 
         try:
-            return float(ExpressionTree.UNARY_OPERATORS[self.operator](value))
+            return float(Expression.UNARY_OPERATORS[self.operator](value))
         except Exception as e:
             print(f"Failed evaluating: {self.operator}({value})")
             print(f"x = {x}")
             print(f"Error: {e}")
             raise
+
+    def get_children(self):
+        return [self.child]
             
             
 
 class BinaryNode(Node):
     def __init__(self, depth):
-        self.operator = random.choice(list(ExpressionTree.BINARY_OPERATORS.keys()))
+        self.operator = random.choice(list(Expression.BINARY_OPERATORS.keys()))
         self.left: Node = Node.generate_child(depth)
         self.right: Node = Node.generate_child(depth)
+        self.parent: Node = None
     
     def __str__(self):
         return "(" + str(self.left) + " " + self.operator + " " + str(self.right) + ")"
-    
+
+    def get_value(self):
+        return self.operator
             
     def evaluate(self, x):
         leftValue = self.left.evaluate(x)
         rightValue = self.right.evaluate(x)
 
-        return float(ExpressionTree.BINARY_OPERATORS[self.operator](leftValue, rightValue))
+        return float(Expression.BINARY_OPERATORS[self.operator](leftValue, rightValue))
+
+    def get_children(self):
+        return [self.left, self.right]
+
+
+
+expr1 = Expression.random(3)
+print(str(expr1))
+expr2 = Expression(expr1.root.left.parent)
+print(str(expr2))
+#nodes = expr2.offspring(expr2.root)
+#for each in nodes:
+#    print(each.get_value())

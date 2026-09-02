@@ -37,12 +37,29 @@ def gen_population(size):
         size = 50
     population = []
     while len(population) < size:
-        equation = eqn.ExpressionTree(4)
+        equation = eqn.Expression.random(4)
 
         if gen.check_valid(equation, gen.gen_random_data(equation)):
             population.append(equation)
 
     return population
+
+
+def fitness(eqn, training_points):
+    total_error = 0.0
+    
+    for (x,y) in training_points:
+        predicted_y = eqn.evaluate(x)
+    
+        if math.isnan(predicted_y):
+            return float('nan')
+    
+        error = (y - predicted_y)**2
+        total_error += error
+    mse = total_error / len(training_points)
+    return mse
+
+
 
 
 def best_fit():
@@ -51,7 +68,8 @@ def best_fit():
     population = gen_population(50)
     print("Chosen Equation: " + str(initial_equation))
     for eqn in population:
-        total_error = 0.0
+        streqn = str(eqn)
+        total_error = float(0.1 * len(streqn))
 
         for (x,y) in points:
             predicted_y = eqn.evaluate(x)
