@@ -68,10 +68,21 @@ def best_fit():
     population = gen_population(50)
     print("Chosen Equation: " + str(initial_equation))
     for eqn in population:
-        mse = fitness(eqn, points)
+        streqn = str(eqn)
+        total_error = float(0.1 * len(streqn))
 
-        if not math.isnan(mse):
-            population_ranked.append((eqn, mse))
+        for (x,y) in points:
+            predicted_y = eqn.evaluate(x)
+
+            if math.isnan(predicted_y):
+                total_error = float('nan')
+                break
+
+            error = (y - predicted_y)**2
+            total_error += error
+
+        if not math.isnan(total_error):
+            population_ranked.append((eqn, total_error))
 
     population_ranked = sorted(
         population_ranked,

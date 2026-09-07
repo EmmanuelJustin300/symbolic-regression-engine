@@ -64,7 +64,10 @@ class Expression:
     }
 
     def __init__(self, root):
-        self.root : Node = root
+        if isinstance(root, Expression):
+            self.root = root.root
+        elif isinstance(root, Node):
+            self.root : Node = root
 
     @classmethod
     def random(cls, depth):
@@ -124,16 +127,23 @@ class Node(ABC):
 
 
         if depth <= 0:
-            return ValueNode()
-
+            new_node = ValueNode()
+            self.parent = new_node
+            return new_node
         choice = random.randint(0, 2)
 
         if choice == 0:
-            return ValueNode()
+            new_node = ValueNode()
+            self.parent = new_node
+            return new_node
         elif choice == 1:
-            return UnaryNode(depth - 1)
+            new_node = UnaryNode(depth - 1)
+            self.parent = new_node
+            return new_node
         else:
-            return BinaryNode(depth - 1)
+            new_node = BinaryNode(depth - 1)
+            self.parent = new_node
+            return new_node
 
 
 
@@ -142,6 +152,7 @@ class ValueNode(Node):
     def __init__(self):
         if random.randint(0,1) == 0:
             self.value = "x"
+            self.parent = None
         else:
             if random.random() < 0.7:
                 self.value = random.randint(-5, 5)
@@ -171,6 +182,8 @@ class UnaryNode(Node):
     def __init__(self, depth):
         self.operator = random.choice(list(Expression.UNARY_OPERATORS.keys()))
         self.child: Node = Node.generate_child(depth)
+        self.parent: Node = None
+
 
     def __str__(self):
         return self.operator + "(" + str(self.child) + ")"
@@ -200,6 +213,7 @@ class BinaryNode(Node):
         self.operator = random.choice(list(Expression.BINARY_OPERATORS.keys()))
         self.left: Node = Node.generate_child(depth)
         self.right: Node = Node.generate_child(depth)
+        self.parent: Node = None
     
     def __str__(self):
         return "(" + str(self.left) + " " + self.operator + " " + str(self.right) + ")"
@@ -220,9 +234,8 @@ class BinaryNode(Node):
 
 expr1 = Expression.random(3)
 print(str(expr1))
-expr2 = Expression(expr1.root)
+expr2 = Expression(expr1.root.left.parent)
 print(str(expr2))
-nodes = expr2.offspring(expr2.root)
-for each in nodes:
-    print(each.get_value())
-
+#nodes = expr2.offspring(expr2.root)
+#for each in nodes:
+#    print(each.get_value())
