@@ -37,7 +37,7 @@ def gen_population(size):
         size = 50
     population = []
     while len(population) < size:
-        equation = eqn.Expression.random(4)
+        equation = eqn.Expression.random_exp(4)
 
         if gen.check_valid(equation, gen.gen_random_data(equation)):
             population.append(equation)

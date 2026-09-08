@@ -1,6 +1,15 @@
 import random, math, operator
 from abc import ABC, abstractmethod  
 
+#All this needs cleanup and refiling
+#Expression needs to be own file, probably same for Nodes
+#Decide whats actually relevant and cast rest aside, e.g
+#is Expression even relevant or should i have nodes do all the intra
+#node operations idk
+#Make comments up top for all classes and such and their
+#relevant methods
+#Maybe make some methods private so I dont use them
+
 def protected_div(a, b):
         if abs(b) < 1e-12:
             return float("nan")
@@ -70,13 +79,19 @@ class Expression:
             self.root : Node = root
 
     @classmethod
-    def random(cls, depth):
+    def random_exp(cls, depth):
         root = Node.generate_child(depth)
         return cls(root)
+
+    def random_node(self):
+        return random.choice(self.offspring(self.root))
 
 
     def __str__(self):
         return str(self.root)
+
+    def __repr__(self):
+        return str(self)
     
     def evaluate(self, x):
         try:
@@ -127,32 +142,25 @@ class Node(ABC):
 
 
         if depth <= 0:
-            new_node = ValueNode()
-            self.parent = new_node
-            return new_node
+            return ValueNode()
         choice = random.randint(0, 2)
 
         if choice == 0:
-            new_node = ValueNode()
-            self.parent = new_node
-            return new_node
+            return ValueNode()
         elif choice == 1:
-            new_node = UnaryNode(depth - 1)
-            self.parent = new_node
-            return new_node
+            return UnaryNode(depth - 1)
         else:
-            new_node = BinaryNode(depth - 1)
-            self.parent = new_node
-            return new_node
+            return BinaryNode(depth - 1)
 
 
 
 
 class ValueNode(Node):
     def __init__(self):
+        self.parent: Node = None
+
         if random.randint(0,1) == 0:
             self.value = "x"
-            self.parent = None
         else:
             if random.random() < 0.7:
                 self.value = random.randint(-5, 5)
@@ -181,8 +189,11 @@ class ValueNode(Node):
 class UnaryNode(Node):
     def __init__(self, depth):
         self.operator = random.choice(list(Expression.UNARY_OPERATORS.keys()))
-        self.child: Node = Node.generate_child(depth)
         self.parent: Node = None
+
+        self.child: Node = Node.generate_child(depth)
+
+        self.child.parent = self
 
 
     def __str__(self):
@@ -211,9 +222,16 @@ class UnaryNode(Node):
 class BinaryNode(Node):
     def __init__(self, depth):
         self.operator = random.choice(list(Expression.BINARY_OPERATORS.keys()))
+        self.parent: Node = None
+
         self.left: Node = Node.generate_child(depth)
         self.right: Node = Node.generate_child(depth)
-        self.parent: Node = None
+
+        self.left.parent = self
+        self.right.parent = self
+
+
+   
     
     def __str__(self):
         return "(" + str(self.left) + " " + self.operator + " " + str(self.right) + ")"
@@ -229,13 +247,12 @@ class BinaryNode(Node):
 
     def get_children(self):
         return [self.left, self.right]
+    print("hello world")
 
 
-
-expr1 = Expression.random(3)
-print(str(expr1))
-expr2 = Expression(expr1.root.left.parent)
-print(str(expr2))
-#nodes = expr2.offspring(expr2.root)
-#for each in nodes:
-#    print(each.get_value())
+equation = Expression.random_exp(6)
+print("equation: " + str(equation))
+print(object.__repr__(equation))
+random_node = equation.random_node()
+print(random_node.get_value())
+print("NodeID: " + object.__repr__(random_node))

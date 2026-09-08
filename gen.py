@@ -44,7 +44,7 @@ def check_valid(equation, data):
 
 
 def gen_file():
-    equation = eqn.Expression.random(3)
+    equation = eqn.Expression.random_exp(3)
     data = gen_random_data(equation)
     filename = gen_file_name()
     
