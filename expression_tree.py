@@ -84,7 +84,7 @@ class Expression:
         return cls(root)
 
     def random_node(self):
-        return random.choice(self.offspring(self.root))
+        return random.choice(self.get_nodes(self.root))
 
 
     def __str__(self):
@@ -103,13 +103,33 @@ class Expression:
         
         return self.root.evaluate(x)
 
-    def offspring(self, node):
+    def get_nodes(self, node):
         nodes = [node]
 
         for child in node.get_children():
-            nodes.extend(self.offspring(child))
+            nodes.extend(self.get_nodes(child))
 
         return nodes
+
+    def replace_node(self, old_node, new_node):
+        if old_node is self.root:
+            self.root = new_node
+            return True
+        
+        parent = self.find_parent(old_node)
+
+        if parent is None:
+            raise ValueError(f"Node not found in expression: {old_node}")
+
+        parent.replace_child(old_node, new_node)
+        return True
+
+
+    def find_parent(self, target_node):
+        for each in self.get_nodes(self.root):
+            if target_node in each.get_children():
+                return each
+
 
 
 
@@ -130,6 +150,9 @@ class Node(ABC):
     def get_value(self):
         pass
 
+    def replace_child(self, old_child, new_child):
+        pass
+
     @staticmethod
     def generate_child(depth):
 
@@ -142,30 +165,63 @@ class Node(ABC):
 
 
         if depth <= 0:
-            return ValueNode()
+            return Node.generate_terminal()
+        
         choice = random.randint(0, 2)
-
         if choice == 0:
-            return ValueNode()
+            return Node.generate_terminal()
         elif choice == 1:
-            return UnaryNode(depth - 1)
+            operator = random.choice(list(Expression.UNARY_OPERATORS.keys()))
+            child = Node.generate_child(depth - 1)
+            return UnaryNode(operator, child)
         else:
-            return BinaryNode(depth - 1)
+            operator = random.choice(list(Expression.BINARY_OPERATORS.keys()))
+            left = Node.generate_child(depth - 1)
+            right = Node.generate_child(depth - 1)
+            return BinaryNode(operator, left, right)
 
 
+    @staticmethod
+    def generate_terminal():
+        if random.choice([True, False]):
+            return VariableNode("x")
 
-
-class ValueNode(Node):
-    def __init__(self):
-        self.parent: Node = None
-
-        if random.randint(0,1) == 0:
-            self.value = "x"
+        if random.random() < 0.7:
+            value = random.randint(-5, 5)
         else:
-            if random.random() < 0.7:
-                self.value = random.randint(-5, 5)
-            else:
-                self.value = round(random.uniform(-100, 100), 2)
+            value = round(random.uniform(-100, 100), 2)
+
+        return ConstantNode(value)
+
+
+
+
+class VariableNode(Node):
+    def __init__(self, variable):
+        self.value = str(variable)
+
+    def __str__(self):
+        return self.value
+
+    def get_value(self):
+        return str(self)
+    
+    
+    def evaluate(self, x):
+        return float(x)
+
+
+    def get_children(self):
+        return []
+
+    def replace_child(self, old_child, new_child):
+        return
+
+
+class ConstantNode(Node):
+    def __init__(self, value):
+        self.value = float(value)
+
 
     def __str__(self):
         return str(self.value)
@@ -174,26 +230,23 @@ class ValueNode(Node):
         return str(self)
     
     
-    def evaluate(self, x):
-        if self.value == "x":
-            return float(x)
-        else:
-            return float(self.value)
+    def evaluate(self, x=None):
+        return float(self.value)
 
 
     def get_children(self):
         return []
         
-
+    def replace_child(self, old_child, new_child):
+        return
 
 class UnaryNode(Node):
-    def __init__(self, depth):
-        self.operator = random.choice(list(Expression.UNARY_OPERATORS.keys()))
-        self.parent: Node = None
+    def __init__(self, operator, child):
+        if operator not in Expression.UNARY_OPERATORS:
+            raise ValueError(f"Invalid unary operator: {operator}")
 
-        self.child: Node = Node.generate_child(depth)
-
-        self.child.parent = self
+        self.operator = operator
+        self.child = child
 
 
     def __str__(self):
@@ -216,22 +269,24 @@ class UnaryNode(Node):
 
     def get_children(self):
         return [self.child]
+
+    def replace_child(self, old_child, new_child):
+        if self.child is old_child:
+            self.child = new_child
+            return True
+        return False
             
             
 
 class BinaryNode(Node):
-    def __init__(self, depth):
-        self.operator = random.choice(list(Expression.BINARY_OPERATORS.keys()))
-        self.parent: Node = None
+    def __init__(self, operator, left, right):
+        if operator not in Expression.BINARY_OPERATORS:
+            raise ValueError(f"Invalid binary operator: {operator}")
 
-        self.left: Node = Node.generate_child(depth)
-        self.right: Node = Node.generate_child(depth)
+        self.operator = operator
+        self.left = left
+        self.right = right
 
-        self.left.parent = self
-        self.right.parent = self
-
-
-   
     
     def __str__(self):
         return "(" + str(self.left) + " " + self.operator + " " + str(self.right) + ")"
@@ -247,12 +302,29 @@ class BinaryNode(Node):
 
     def get_children(self):
         return [self.left, self.right]
-    print("hello world")
+
+    def replace_child(self, old_child, new_child):
+        if self.left is old_child:
+            self.left = new_child
+            return True
+        elif self.right is old_child:
+            self.right = new_child
+            return True
+        return False
 
 
-equation = Expression.random_exp(6)
-print("equation: " + str(equation))
-print(object.__repr__(equation))
-random_node = equation.random_node()
-print(random_node.get_value())
-print("NodeID: " + object.__repr__(random_node))
+expr = Expression(
+    BinaryNode(
+        "+",
+        VariableNode("x"),
+        ConstantNode(5)
+        )
+)
+
+print(expr)
+
+expr.replace_node(expr.root.left, ConstantNode(2))
+print(expr)
+
+expr.replace_node(expr.root, VariableNode("x"))
+print(expr)
